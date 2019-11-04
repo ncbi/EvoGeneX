@@ -1,7 +1,10 @@
-library(ouch)
-library(ape)
-
-source("../R/utils.R")
+#' Base refclass to implement different models
+#'
+#' @import methods
+#' @import ape
+#' @import ouch
+#' @export BaseModel
+#' @exportClass BaseModel
 
 BaseModel = setRefClass("BaseModel",
   fields=list(tree="ouchtree"),

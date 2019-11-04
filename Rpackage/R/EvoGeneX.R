@@ -1,17 +1,39 @@
-library(ouch)
-library(ape)
-library(tidyverse)
-library(nloptr)
-source("../R/BaseModel.R")
+#' EvoGeneX class implementation
+#'
+#' @import methods
+#' @importFrom tidyr gather
+#' @export EvoGeneX
+#' @exportClass EvoGeneX
 
-Brown = setRefClass("Brown",
+
+EvoGeneX = setRefClass("EvoGeneX",
   contains = "BaseModel",
   fields=list(regimes="data.frame"),
   methods=list(
-    getWeights = function(nrep) {
+    getWeights = function(nrep, beta, alpha) {
       nt = tree@nterm
       epochs = tree@epochs
-      W = matrix(1, nt*nrep, 1)
+      nreg = ncol(beta[[1]][[1]])
+      W = matrix(0, nt*nrep, nreg)
+      for (i in 1:nt) {
+        ep = epochs[[i]]
+        np = length(ep)
+        y = vector('numeric', np)
+        for (j in 1:np) {
+          t = ep[1]-ep[j];
+          y[j] = exp(-alpha*t);
+        }
+        for (j in 1:(np-1)) {
+          y[j] = y[j] - y[j+1];
+        }
+        bp = beta[[i]][[1]]
+        for (r in 1:nreg) {
+          for (k in 1:nrep) {
+            p = k + (i-1)*nrep
+            W[p,1] = sum(y*bp[,r])
+          }
+        }
+      }
       return(W)
     },
     getCovar = function(nrep, alpha, gamma.sq) {
@@ -24,7 +46,7 @@ Brown = setRefClass("Brown",
             for (l in 1:nrep) {
               p = k + (i-1)*nrep
               q = l + (j-1)*nrep
-              v[p,q] = bt[i,j] #exp(alpha*(-bt[i,i] - bt[j,j] + 2*bt[i,j]))/(2*alpha)
+              v[p,q] = exp(alpha*(-bt[i,i] - bt[j,j] + 2*bt[i,j]))/(2*alpha)
               if ((i == j) && (k == l)) {
                 v[p,q] = v[p,q] + gamma.sq
               }
@@ -34,9 +56,9 @@ Brown = setRefClass("Brown",
       }
       return(v)
     },
-    computeLogLik = function (nrep, dat, alpha, gamma.sq) {
+    computeLogLik = function (nrep, beta, dat, alpha, gamma.sq) {
       n <- length(dat)
-      w <- getWeights(nrep)
+      w <- getWeights(nrep, beta, alpha)
       v <- getCovar(nrep, alpha, gamma.sq)
       gsol <- try(
         glssoln(w,dat,v),
@@ -51,42 +73,31 @@ Brown = setRefClass("Brown",
         theta <- gsol$coeff
         q <- e%*%solve(v,e)
       }
-
-      print(theta)
-
       sigma.sq = q[1,1]/n
-
       det.v = determinant(v, logarithm=T)
       if (det.v$sign != 1) {
         stop("mylogLik error: non-positive determinant",call.=FALSE)
       }
       log.det.v <- det.v$modulus
-
       res = n*log(2*pi) + n*(1+log(sigma.sq)) + log.det.v
-
-      list(dev=res, gamma.sq=gamma.sq, sigma.sq=sigma.sq, theta=theta)
+      list(dev=res, alpha=alpha, gamma.sq=gamma.sq, sigma.sq=sigma.sq, theta=theta)
     },
 
-    fit = function(data, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
+    fit = function(data, alpha, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
       otd = as(tree, 'data.frame')
       tmp <- merge(otd[c('nodes', 'labels')], data, by.x='labels', by.y='row.names')
       rownames(tmp) <- tmp$nodes
       tmp$nodes <- NULL
       tmp$labels <- NULL
       tmp = tmp[as.character(tree@term),]
-      print(tmp)
       dat = gather(data.frame(t(tmp)))$value
-      print(dat)
-
       nrep <- ncol(data)
-
+      beta <- getBeta(tree,regimes)
       optim.diagn <- vector(mode='list',length=0)
-
-      par = c(gamma.sq)
-
+      par = c(alpha, gamma.sq)
       opt <- nloptr(par,
                     eval_f = function(par) {
-                      computeLogLik(nrep=nrep, dat=dat, gamma.sq=par[1])$dev
+                      computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=par[1], gamma.sq=par[2])$dev
                     },
                     eval_grad_f=NULL,
                     eval_g_ineq=NULL,
@@ -109,10 +120,11 @@ Brown = setRefClass("Brown",
 
       optim.diagn <- list(convergence=opt$status,message=opt$message)
 
-      sol <- computeLogLik(nrep=nrep, dat=dat, gamma.sq=opt$solution[1])
+      sol <- computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=opt$solution[1], gamma.sq=opt$solution[2])
 
       list(optim.diagn=optim.diagn,
         theta=sol$theta,
+        alpha=sol$alpha,
         sigma.sq=sol$sigma.sq,
         gamma.sq=sol$gamma.sq,
         loglik=-0.5*sol$dev

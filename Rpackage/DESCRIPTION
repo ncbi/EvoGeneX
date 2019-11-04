@@ -1,0 +1,15 @@
+Package: EvoGeneX
+Type: Package
+Title: Replicate-aware Ornstein-Uhlenbeck Models for Phylogenetic Comparative Analysis
+Version: 0.0-1
+Date: 2019-09-01
+Author: Soumitra Pal <soumitra.pal@nih.gov> and Teresa M. Przytycka <przytyck@mail.ncbi.nih.gov>
+Maintainer: Soumitra Pal <soumitra.pal@nih.gov>
+Description: Fit and compare Ornstein-Uhlenbeck models that uses replicates for evolution of quantitative trait along a phylogenetic tree.
+Depends: R(>= 3.5), methods, stats, graphics, nloptr, corpcor, ouch
+Suggests: ape, geiger
+URL: https://github.com/ncbi/EvoGeneX
+License: GPL-3
+LazyLoad: true
+Collate: utils.R BaseModel.R Brown.R EvoGeneX.R
+RoxygenNote: 6.1.1
