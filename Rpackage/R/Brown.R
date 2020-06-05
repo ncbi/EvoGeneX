@@ -101,7 +101,7 @@ Brown = setRefClass("Brown",
       sol <- computeLogLik(nrep=nrep, dat=dat, gamma.sq=opt$solution[1])
 
       list(optim.diagn=optim.diagn,
-        theta=sol$theta,
+        theta=setNames(sol$theta, 'global'),
         sigma.sq=sol$sigma.sq,
         gamma.sq=sol$gamma.sq,
         loglik=-0.5*sol$dev
