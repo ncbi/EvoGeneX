@@ -13,7 +13,7 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 LazyLoad: true
-Collate: utils.R BaseModel.R Brown.R EvoGeneX.R RcppExports.R
+Collate: utils.R BaseModel.R Brown.R EvoGeneX.R RcppExports.R EvoGeneX-package.R
 RoxygenNote: 6.1.1
 Imports: Rcpp (>= 1.0.4.6), nloptr (>= 1.2.0)
 LinkingTo: Rcpp, RcppEigen, nloptr (>= 1.2.0)

@@ -4,6 +4,11 @@
 #include <limits>
 #include <Eigen/Dense>
 
+// NOTE: There are some function body definition in noptrAPI.h
+// Henece it can not be included in different .cpp file as it
+// will give multiple definition error for those functions
+// Hence we keep the definition of both fitting methods in this file
+
 const double X_TOL = sqrt(std::numeric_limits<double>::epsilon());
 
 #define KEEP_LOG 0
@@ -208,20 +213,213 @@ double myfunc(unsigned n, const double *x, double *grad, void *data)
 }
 
 
+class MLE_Brown {
+public:
+    int nterm;
+    int nrep;
+    int n;
+    double gamma;
+    double sigmasq;
+    double logLik;
+    std::vector<double> par;
+    const NumericMatrix &bt;
+    const Map<VectorXd> &dat;
+#if KEEP_LOG
+    ofstream out;
+    int fcount;
+#endif
+    MatrixXd W;
+    MatrixXd V;
+    VectorXd theta;
+    MLE_Brown(int _nterm,
+        int _nrep,
+        double _gamma,
+        const NumericMatrix &_bt,
+        const NumericVector &_dat
+    ): nterm(_nterm), nrep(_nrep),
+    n(_nterm * _nrep),
+    gamma(_gamma),
+    par{gamma, 0},
+    bt(_bt),
+    dat(as<Map<VectorXd> >(_dat)),
+#if KEEP_LOG
+    out("fast_brown.log"),
+    fcount(0),
+#endif
+    W(MatrixXd::Ones(n, 1)),
+    V(n, n),
+    theta(1)
+    {
+    }
+
+    void computeCovars() {
+        for (int termi=0; termi<nterm; termi++) {
+            for (int repk=0; repk<nrep; repk++) {
+                for (int termj=0; termj<nterm; termj++) {
+                    for (int repl=0; repl<nrep; repl++) {
+                        int p = repk + termi*nrep;
+                        int q = repl + termj*nrep;
+                        V(p,q) = bt[termi + termj*nterm];
+                        if ((termi == termj) && (repk == repl)) {
+                            V(p,q) += gamma;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    double computeLogLik()
+    {
+        gamma = par[0];
+ 
+#if KEEP_LOG
+        fcount++;
+        out << "###################### IN ComputeLogLik ########################" << endl;
+        out << "n: " << n << endl;
+        out << "nrep: " << nrep << endl;
+        out << "alpha: " << alpha << endl;
+        out << "gamma: " << gamma << endl;
+#endif
+
+        //computeWeights();
+#if KEEP_LOG
+        out << "W:\n" << W << endl;
+#endif
+
+        computeCovars();
+#if KEEP_LOG
+        out << "V:\n" << V << endl;
+#endif
+
+        auto solver2 = V.colPivHouseholderQr();
+
+        MatrixXd L = V.llt().matrixL();
+#if KEEP_LOG
+        out << "L:\n" << L << endl;
+#endif
+
+        auto solver = L.colPivHouseholderQr();
+        auto X = solver.solve(W);
+#if KEEP_LOG
+        out << "X:\n" << X << endl;
+#endif
+
+        auto y = solver.solve(dat);
+#if KEEP_LOG
+        out << "y:\n" << y << endl;
+#endif
+
+        theta = X.bdcSvd(ComputeThinU | ComputeThinV).setThreshold(X_TOL).solve(y);
+#if KEEP_LOG
+        out << "theta:\n" << theta << endl;
+#endif
+
+        auto e = (W*theta - dat);
+#if KEEP_LOG
+        out << "e:\n" << e << endl;
+#endif
+
+        auto zz = solver2.solve(e);
+#if KEEP_LOG
+        out << "zz:\n" << zz << endl;
+#endif
+
+        auto q = e.transpose()*zz;
+#if KEEP_LOG
+        out << "q:\n" << q << endl;
+#endif
+
+        sigmasq = q(0,0)/n;
+#if KEEP_LOG
+        out << "sigmasq: " << sigmasq << endl;
+#endif
+
+        double detv = 2 * solver.logAbsDeterminant(); //toDenseMatrix().diagonal().array().log().sum();
+        
+        logLik = n*log(2*M_PI) + n*(1+log(sigmasq)) + detv;
+#if KEEP_LOG
+        out << "logLik: " << logLik << endl;
+#endif
+        return(logLik);
+    }
+};
+
+double mybrown(unsigned n, const double *x, double *grad, void *data)
+{
+    MLE_Brown * mle = static_cast<MLE_Brown *>(data);
+    return mle->computeLogLik();
+}
+
+
 // [[Rcpp::export]]
-List evogenex_fit(NumericVector dat,
-        int nterm,
-        int nrep,
-        int nreg,
+List brown_fit(int nterm, int nrep,
+        const NumericVector &dat,
+        const NumericMatrix &bt,
+        double gamma)
+{
+#if KEEP_LOG
+    printf("nterm=%d\n", nterm);
+    printf("nrep=%d\n", nrep);
+    cout << "gamma: " << gamma << endl; 
+    cout << "bt: ";
+    for (int i=0; i<nterm; i++) {
+        for (int j=0; j<nterm; j++) { cout << " " << bt(i,j); } cout << endl;
+    }
+#endif
+
+    MLE_Brown mle(nterm, nrep, gamma, bt, dat);
+
+    double lb[2] = { 1e-10, 1e-10 }; 		// lower bounds
+    double ub[2] = { 1e+10, 1e+10 }; 		// upper bounds
+
+    nlopt_opt opt;
+    opt = nlopt_create(NLOPT_LN_SBPLX, 1); /* algorithm and dimensionality */
+    nlopt_set_lower_bounds(opt, lb);
+    nlopt_set_upper_bounds(opt, ub);
+    nlopt_set_xtol_rel(opt, X_TOL);
+    nlopt_set_maxeval(opt, 10000);
+    nlopt_set_min_objective(opt, mybrown, &mle);
+
+    double minf; // minimum objective value, upon return
+    int status = 0;
+    if (nlopt_optimize(opt, &(mle.par[0]), &minf) < 0) {
+#if KEEP_LOG
+        Rcpp::Rcout << "nlopt failed!" << std::endl;
+#endif
+    } else {
+        status = 1;
+#if KEEP_LOG
+        {
+            Rcpp::Rcout << std::setprecision(5)
+                << "Found minimum at f(" << mle.par[0] << "," << mle.par[1] << ") "
+                << "= " << std::setprecision(8) << minf
+                << " after " << mle.fcount << " function evaluations."
+                << std::endl;
+        }
+#endif
+    }
+    nlopt_destroy(opt);
+    mle.computeLogLik();
+    return Rcpp::List::create(
+            Rcpp::Named("alpha") = mle.par[1],
+            Rcpp::Named("gamma") = mle.par[0],
+            Rcpp::Named("sigma.sq") = mle.sigmasq,
+            Rcpp::Named("logLik") = -0.5*mle.logLik,
+            Rcpp::Named("theta") = mle.theta,
+            Rcpp::Named("status") = status);
+}
+
+
+// [[Rcpp::export]]
+List evogenex_fit(int nterm, int nrep, int nreg,
+        const NumericVector &dat,
         const NumericVector &nbranch,
         const NumericVector &beta,
         const NumericVector &epochs,
         const NumericMatrix &bt,
-        double alpha,
-        double gamma)
+        double alpha, double gamma)
 {
-    int nrow = dat.size();
-
 #if KEEP_LOG
     printf("nterm=%d\n", nterm);
     printf("nrep=%d\n", nrep);

@@ -195,7 +195,6 @@ EvoGeneX = setRefClass("EvoGeneX",
       tmp = tmp[as.character(tree@term),]
       dat = gather(data.frame(t(tmp)))$value
       nrep <- ncol(data)
-      nreg = 2
 
       opt <- evogenex_fit(dat=dat, nterm=tree@nterm,
                           nreg=nlevels(regimes$regimes),

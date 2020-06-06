@@ -1,6 +1,6 @@
+Rcpp::compileAttributes()
 #pkgbuild::compile_dll()
 #devtools::check()
 devtools::document()
-Rcpp::compileAttributes()
 devtools::build()
 devtools::install()

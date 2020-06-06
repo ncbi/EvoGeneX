@@ -62,7 +62,7 @@ Brown = setRefClass("Brown",
       list(dev=res, gamma.sq=gamma.sq, sigma.sq=sigma.sq, theta=theta)
     },
 
-    fit = function(data, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
+    fitSlow = function(data, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
       otd = as(tree, 'data.frame')
       tmp <- merge(otd[c('nodes', 'labels')], data, by.x='labels', by.y='row.names')
       rownames(tmp) <- tmp$nodes
@@ -105,6 +105,34 @@ Brown = setRefClass("Brown",
         sigma.sq=sol$sigma.sq,
         gamma.sq=sol$gamma.sq,
         loglik=-0.5*sol$dev
+      )
+    },
+
+    fit = function(data, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
+      otd = as(tree, 'data.frame')
+      tmp <- merge(otd[c('nodes', 'labels')], data, by.x='labels', by.y='row.names')
+      rownames(tmp) <- tmp$nodes
+      tmp$nodes <- NULL
+      tmp$labels <- NULL
+      tmp = tmp[as.character(tree@term),]
+      dat = gather(data.frame(t(tmp)))$value
+      nrep <- ncol(data)
+
+      opt <- brown_fit(dat=dat, nterm=tree@nterm, nrep=nrep, bt=tree@branch.times, gamma=gamma.sq)
+
+      if (!((opt$status>=1) && (opt$status <= 4))) {
+        message("unsuccessful convergence, code ", opt$status, ", see documentation for ", 'nloptr')
+        warning("unsuccessful convergence, message ", opt$message)
+      }
+
+      optim.diagn <- list(convergence=opt$status,message=opt$message)
+
+      list(optim.diagn=optim.diagn,
+        theta=setNames(opt$theta, levels(regimes$regimes)),
+        alpha=opt$alpha,
+        sigma.sq=opt$sigma.sq,
+        gamma.sq=opt$gamma,
+        loglik=opt$logLik
       )
     }
   )
