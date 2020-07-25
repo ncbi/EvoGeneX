@@ -18,10 +18,6 @@ const double X_TOL = sqrt(std::numeric_limits<double>::epsilon());
 using namespace Rcpp;
 using namespace std;
 using namespace Eigen;
-//using namespace Eigen::Map;                       // 'maps' rather than copies
-//using namespace Eigen::MatrixXd;                  // variable size matrix, double precision
-//using namespace Eigen::VectorXd;                  // variable size vector, double precision
-//using namespace Eigen::SelfAdjointEigenSolver;    // one of the eigenvalue solvers
 
 class MLE {
 public:
@@ -294,22 +290,28 @@ public:
 
         auto solver2 = V.colPivHouseholderQr();
 
+        // V = L * L^T
         MatrixXd L = V.llt().matrixL();
 #if KEEP_LOG
         out << "L:\n" << L << endl;
 #endif
 
         auto solver = L.colPivHouseholderQr();
+        // X = L^{-1} * W
         auto X = solver.solve(W);
 #if KEEP_LOG
         out << "X:\n" << X << endl;
 #endif
 
+        // y = L^{-1} * dat
         auto y = solver.solve(dat);
 #if KEEP_LOG
         out << "y:\n" << y << endl;
 #endif
 
+        // theta = Least square solution of: X * theta = y
+        // that is multiply both sides by X^T: X^T * X * theta = X^T * y
+        // that is theta = (X^T * X)^{-1} * y
         theta = X.bdcSvd(ComputeThinU | ComputeThinV).setThreshold(X_TOL).solve(y);
 #if KEEP_LOG
         out << "theta:\n" << theta << endl;
