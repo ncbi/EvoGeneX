@@ -138,6 +138,57 @@ EvoGeneX = setRefClass("EvoGeneX",
       list(dev=res, alpha=alpha, gamma.sq=gamma.sq, sigma.sq=sigma.sq, theta=theta)
     },
 
+
+
+    fitMCMC = function(data, alpha, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
+      otd = as(tree, 'data.frame')
+      tmp <- merge(otd[c('nodes', 'labels')], data, by.x='labels', by.y='row.names')
+      rownames(tmp) <- tmp$nodes
+      tmp$nodes <- NULL
+      tmp$labels <- NULL
+      tmp = tmp[as.character(tree@term),]
+      dat = gather(data.frame(t(tmp)))$value
+      nrep <- ncol(data)
+      beta <- getBeta(tree,regimes)
+      optim.diagn <- vector(mode='list',length=0)
+      par = c(alpha, gamma.sq)
+      opt <- nloptr(par,
+                    eval_f = function(par) {
+                      computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=par[1], gamma.sq=par[2])$dev
+                    },
+                    eval_grad_f=NULL,
+                    eval_g_ineq=NULL,
+                    eval_g_eq=NULL,
+                    eval_jac_g_ineq=NULL,
+                    eval_jac_g_eq=NULL,
+                    lb=rep(lb, length(par)),
+                    ub=rep(ub, length(par)),
+                    opts <- list(algorithm="NLOPT_LN_SBPLX",
+                                 maxeval=10000,
+                                 ftol_rel=.Machine$double.eps^0.5))
+
+      status = opt$status
+      message = opt$message
+
+      if (!((status>=1) && (status <= 4))) {
+        message("unsuccessful convergence, code ", status, ", see documentation for ", 'nloptr')
+        warning("unsuccessful convergence, message ", message)
+      }
+
+      optim.diagn <- list(convergence=opt$status,message=opt$message)
+
+      sol <- computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=opt$solution[1], gamma.sq=opt$solution[2])
+
+      list(optim.diagn=optim.diagn,
+        theta=setNames(sol$theta, colnames(beta[[1]][[1]])),
+        alpha=sol$alpha,
+        sigma.sq=sol$sigma.sq,
+        gamma.sq=sol$gamma.sq,
+        loglik=-0.5*sol$dev
+      )
+    },
+
+
     fitSlow = function(data, alpha, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
       otd = as(tree, 'data.frame')
       tmp <- merge(otd[c('nodes', 'labels')], data, by.x='labels', by.y='row.names')
