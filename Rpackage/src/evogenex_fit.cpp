@@ -115,7 +115,9 @@ public:
                         double ii = bt[termi + termi*nterm];
                         double jj = bt[termj + termj*nterm];
                         double ij = bt[termi + termj*nterm];
-                        V(p,q) = exp(alpha*(-ii - jj + 2*ij))/(2*alpha);
+                        double part1 = exp(alpha*(-ii - jj + 2*ij));
+                        double part2 = (1-exp(-2*alpha*ij));
+                        V(p,q) = part1*part2/(2*alpha);
                         if ((termi == termj) && (repk == repl)) {
                             V(p,q) += gamma;
                         }
