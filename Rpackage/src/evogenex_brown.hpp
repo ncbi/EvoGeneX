@@ -10,7 +10,7 @@ public:
     int n;
     double gamma;
     double sigmasq;
-    double logLik;
+    double loglik;
     std::vector<double> par;
     const NumericMatrix &bt;
     const Map<VectorXd> &dat;
@@ -68,7 +68,6 @@ public:
         out << "###################### IN ComputeLogLik ########################" << endl;
         out << "n: " << n << endl;
         out << "nrep: " << nrep << endl;
-        out << "alpha: " << alpha << endl;
         out << "gamma: " << gamma << endl;
 #endif
 
@@ -133,11 +132,11 @@ public:
 
         double detv = 2 * solver.logAbsDeterminant(); //toDenseMatrix().diagonal().array().log().sum();
         
-        logLik = n*log(2*M_PI) + n*(1+log(sigmasq)) + detv;
+        loglik = n*log(2*M_PI) + n*(1+log(sigmasq)) + detv;
 #if KEEP_LOG
-        out << "logLik: " << logLik << endl;
+        out << "loglik: " << loglik << endl;
 #endif
-        return(logLik);
+        return(loglik);
     }
 };
 

@@ -75,10 +75,9 @@ List brown_fit(int nterm, int nrep,
     nlopt_destroy(opt);
     mle.computeLogLik();
     return Rcpp::List::create(
-            Rcpp::Named("alpha") = mle.par[1],
             Rcpp::Named("gamma") = mle.par[0],
             Rcpp::Named("sigma.sq") = mle.sigmasq,
-            Rcpp::Named("logLik") = -0.5*mle.logLik,
+            Rcpp::Named("loglik") = -0.5*mle.loglik,
             Rcpp::Named("theta") = mle.theta,
             Rcpp::Named("status") = status);
 }
@@ -146,7 +145,7 @@ List evogenex_fit(int nterm, int nrep, int nreg,
             Rcpp::Named("alpha") = mle.par[0],
             Rcpp::Named("gamma") = mle.par[1],
             Rcpp::Named("sigma.sq") = mle.sigmasq,
-            Rcpp::Named("logLik") = -0.5*mle.logLik,
+            Rcpp::Named("loglik") = -0.5*mle.loglik,
             Rcpp::Named("theta") = mle.theta,
             Rcpp::Named("status") = status);
 }

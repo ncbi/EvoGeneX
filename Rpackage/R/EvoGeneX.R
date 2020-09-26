@@ -70,7 +70,7 @@ EvoGeneX = setRefClass("EvoGeneX",
       #print(W)
       return(W)
     },
-    getCovar = function(nrep, alpha, gamma.sq) {
+    getCovar = function(nrep, alpha, gamma) {
       nterm = tree@nterm
       bt = tree@branch.times
       v = matrix(0, nterm*nrep, nterm*nrep)
@@ -80,9 +80,11 @@ EvoGeneX = setRefClass("EvoGeneX",
             for (l in 1:nrep) {
               p = k + (i-1)*nrep
               q = l + (j-1)*nrep
-              v[p,q] = exp(alpha*(-bt[i,i] - bt[j,j] + 2*bt[i,j]))/(2*alpha)
+              part1 = exp(alpha*(-bt[i,i] - bt[j,j] + 2*bt[i,j]));
+              part2 = (1-exp(-2*alpha*bt[i,j]));
+              v[p,q] = part1*part2/(2*alpha);
               if ((i == j) && (k == l)) {
-                v[p,q] = v[p,q] + gamma.sq
+                v[p,q] = v[p,q] + gamma
               }
             }
           }
@@ -90,16 +92,16 @@ EvoGeneX = setRefClass("EvoGeneX",
       }
       return(v)
     },
-    computeLogLik = function (nrep, beta, dat, alpha, gamma.sq) {
+    computeLogLik = function (nrep, beta, dat, alpha, gamma) {
       n <- length(dat)
       w <- getWeights(nrep, beta, alpha)
-      v <- getCovar(nrep, alpha, gamma.sq)
+      v <- getCovar(nrep, alpha, gamma)
 
 #      print("###################### IN ComputeLogLik ########################")
 #      print(paste("n:", n))
 #      print(paste("nrep:", nrep))
 #      print(paste("alpha:", alpha))
-#      print(paste("gamma:", gamma.sq))
+#      print(paste("gamma:", gamma))
 #      print("W:")
 #      print(w)
 #      print("V:")
@@ -129,18 +131,18 @@ EvoGeneX = setRefClass("EvoGeneX",
       sigma.sq = q[1,1]/n
       det.v = determinant(v, logarithm=T)
       if (det.v$sign != 1) {
-        stop("mylogLik error: non-positive determinant",call.=FALSE)
+        stop("myloglik error: non-positive determinant",call.=FALSE)
       }
       log.det.v <- det.v$modulus
       res = n*log(2*pi) + n*(1+log(sigma.sq)) + log.det.v
 #      print(paste("sigma.sq:", sigma.sq))
-#      print(paste("logLik", res))
-      list(dev=res, alpha=alpha, gamma.sq=gamma.sq, sigma.sq=sigma.sq, theta=theta)
+#      print(paste("loglik", res))
+      list(dev=res, alpha=alpha, gamma=gamma, sigma.sq=sigma.sq, theta=theta)
     },
 
 
 
-    fitMCMC = function(data, alpha, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
+    fitMCMC = function(data, alpha, gamma, lb = 1e-10, ub = 1e+10,...) {
       otd = as(tree, 'data.frame')
       tmp <- merge(otd[c('nodes', 'labels')], data, by.x='labels', by.y='row.names')
       rownames(tmp) <- tmp$nodes
@@ -151,10 +153,10 @@ EvoGeneX = setRefClass("EvoGeneX",
       nrep <- ncol(data)
       beta <- getBeta(tree,regimes)
       optim.diagn <- vector(mode='list',length=0)
-      par = c(alpha, gamma.sq)
+      par = c(alpha, gamma)
       opt <- nloptr(par,
                     eval_f = function(par) {
-                      computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=par[1], gamma.sq=par[2])$dev
+                      computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=par[1], gamma=par[2])$dev
                     },
                     eval_grad_f=NULL,
                     eval_g_ineq=NULL,
@@ -177,33 +179,38 @@ EvoGeneX = setRefClass("EvoGeneX",
 
       optim.diagn <- list(convergence=opt$status,message=opt$message)
 
-      sol <- computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=opt$solution[1], gamma.sq=opt$solution[2])
+      sol <- computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=opt$solution[1], gamma=opt$solution[2])
 
       list(optim.diagn=optim.diagn,
         theta=setNames(sol$theta, colnames(beta[[1]][[1]])),
         alpha=sol$alpha,
         sigma.sq=sol$sigma.sq,
-        gamma.sq=sol$gamma.sq,
+        gamma=sol$gamma,
         loglik=-0.5*sol$dev
       )
     },
 
 
-    fitSlow = function(data, alpha, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
+    fitSlow = function(data, alpha, gamma,
+                   spe_col = 'species', rep_col = 'replicate', exp_col = 'expval',
+                   lb = 1e-10, ub = 1e+10,...) {
+      dat = data[c(spe_col, rep_col, exp_col)]
+      names(dat) = c('species', 'replicate', 'expval')
+      replicates = unique(dat$replicate)
+      dat = dcast(dat, species~replicate, value.var='expval')
       otd = as(tree, 'data.frame')
-      tmp <- merge(otd[c('nodes', 'labels')], data, by.x='labels', by.y='row.names')
+      tmp <- merge(otd, data.frame(dat), by.x='labels', by.y='species', all=TRUE)
+      # merging destroys index of dataframe
       rownames(tmp) <- tmp$nodes
-      tmp$nodes <- NULL
-      tmp$labels <- NULL
-      tmp = tmp[as.character(tree@term),]
+      tmp = tmp[as.character(tree@term), replicates, drop=FALSE]
       dat = gather(data.frame(t(tmp)))$value
-      nrep <- ncol(data)
       beta <- getBeta(tree,regimes)
       optim.diagn <- vector(mode='list',length=0)
-      par = c(alpha, gamma.sq)
+      par = c(alpha, gamma)
+      nrep=length(replicates)
       opt <- nloptr(par,
                     eval_f = function(par) {
-                      computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=par[1], gamma.sq=par[2])$dev
+                      computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=par[1], gamma=par[2])$dev
                     },
                     eval_grad_f=NULL,
                     eval_g_ineq=NULL,
@@ -226,32 +233,40 @@ EvoGeneX = setRefClass("EvoGeneX",
 
       optim.diagn <- list(convergence=opt$status,message=opt$message)
 
-      sol <- computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=opt$solution[1], gamma.sq=opt$solution[2])
+      sol <- computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=opt$solution[1], gamma=opt$solution[2])
 
       list(optim.diagn=optim.diagn,
         theta=setNames(sol$theta, colnames(beta[[1]][[1]])),
         alpha=sol$alpha,
         sigma.sq=sol$sigma.sq,
-        gamma.sq=sol$gamma.sq,
+        gamma=sol$gamma,
         loglik=-0.5*sol$dev
       )
     },
 
-    fit = function(data, alpha, gamma.sq, lb = 1e-10, ub = 1e+10,...) {
-      otd = as(tree, 'data.frame')
-      tmp <- merge(otd[c('nodes', 'labels')], data, by.x='labels', by.y='row.names')
-      rownames(tmp) <- tmp$nodes
-      tmp$nodes <- NULL
-      tmp$labels <- NULL
-      tmp = tmp[as.character(tree@term),]
-      dat = gather(data.frame(t(tmp)))$value
-      nrep <- ncol(data)
+    # input data in melted form with three columns species, replicate, exp
+    # where each row of the form sp,rep,ex represent the expression value
+    # ex of species sp and replicate rep, example:
+    # dmel,R1,123.456 and so on
 
-      opt <- evogenex_fit(dat=dat, nterm=tree@nterm,
-                          nreg=nlevels(regimes$regimes),
-                          nrep=nrep, nbranch=nbranch, beta=packed_beta,
+    fit = function(data, alpha, gamma,
+                   spe_col = 'species', rep_col = 'replicate', exp_col = 'expval',
+                   lb = 1e-10, ub = 1e+10,...) {
+      dat = data[c(spe_col, rep_col, exp_col)]
+      names(dat) = c('species', 'replicate', 'expval')
+      replicates = unique(dat$replicate)
+      dat = dcast(dat, species~replicate, value.var='expval')
+      otd = as(tree, 'data.frame')
+      tmp <- merge(otd, data.frame(dat), by.x='labels', by.y='species', all=TRUE)
+      # merging destroys index of dataframe
+      rownames(tmp) <- tmp$nodes
+      tmp = tmp[as.character(tree@term), replicates, drop=FALSE]
+      dat = gather(data.frame(t(tmp)))$value
+
+      opt <- evogenex_fit(dat=dat, nterm=tree@nterm, nreg=nlevels(regimes$regimes),
+                          nrep=length(replicates), nbranch=nbranch, beta=packed_beta,
                           epochs=packed_epochs, bt=tree@branch.times,
-                          alpha=alpha, gamma=gamma.sq)
+                          alpha=alpha, gamma=gamma)
 
       if (!((opt$status>=1) && (opt$status <= 4))) {
         message("unsuccessful convergence, code ", opt$status, ", see documentation for ", 'nloptr')
@@ -264,8 +279,8 @@ EvoGeneX = setRefClass("EvoGeneX",
         theta=setNames(opt$theta, levels(regimes$regimes)),
         alpha=opt$alpha,
         sigma.sq=opt$sigma.sq,
-        gamma.sq=opt$gamma,
-        loglik=opt$logLik
+        gamma=opt$gamma,
+        loglik=opt$loglik
       )
     }
   )

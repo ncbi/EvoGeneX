@@ -20,9 +20,9 @@ BaseModel = setRefClass("BaseModel",
       otd$labels <- ifelse(otd$labels == "", NA, otd$labels)
       tree <<- with(otd,ouchtree(nodes=nodes,ancestors=ancestors,times=times,labels=labels))
       nbranch <<- sapply(tree@epochs, length)
-      print(nbranch)
+      #print(nbranch)
       packed_epochs <<- unlist(tree@epochs)
-      print(packed_epochs)
+      #print(packed_epochs)
     }
   )
 )

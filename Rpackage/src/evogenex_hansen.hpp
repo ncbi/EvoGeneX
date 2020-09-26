@@ -12,7 +12,7 @@ public:
     double alpha;
     double gamma;
     double sigmasq;
-    double logLik;
+    double loglik;
     std::vector<double> par;
     const NumericVector &nbranch;
     const NumericVector &beta;
@@ -180,11 +180,11 @@ public:
 
         double detv = 2 * solver.logAbsDeterminant(); //toDenseMatrix().diagonal().array().log().sum();
         
-        logLik = n*log(2*M_PI) + n*(1+log(sigmasq)) + detv;
+        loglik = n*log(2*M_PI) + n*(1+log(sigmasq)) + detv;
 #if KEEP_LOG
-        out << "logLik: " << logLik << endl;
+        out << "loglik: " << loglik << endl;
 #endif
-        return(logLik);
+        return(loglik);
     }
 };
 
