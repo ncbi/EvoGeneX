@@ -14,20 +14,26 @@ EvoGeneX = setRefClass("EvoGeneX",
       regimesdf = read.csv(regimefile, header=T, stringsAsFactors=F)
       nodelabels = tree@nodelabels
       lineages = tree@lineages
-      regimesdf$nodeid = sapply(regimesdf$node, function(x) {
-        x = unlist(strsplit(x, split="[.]"))
-        if (length(x) == 1) {
-          return(which(nodelabels == x))
+      get_mra <- function(lab1, lab2) {
+        if (lab2 %in% c("", NA)) {
+          # use node label directly
+          return(which(nodelabels == lab1))
         } else {
-          a = which(nodelabels == x[1])
-          b = which(nodelabels == x[2])
-          lineage1 = rev(lineages[[a]])
-          lineage2 = rev(lineages[[b]])
+          # find most recent ancestor of two leaves given by the labels
+          id1 = which(nodelabels == lab1)
+          id2 = which(nodelabels == lab2)
+          lineage1 = rev(lineages[[id1]])
+          lineage2 = rev(lineages[[id2]])
           i = 1
           while (lineage1[i] == lineage2[i]) i = i + 1
-          return(lineage1[i-1])
+          return(lineage1[[i-1]])
         }
-      })
+      }
+      regimesdf <- rowwise(regimesdf) %>% mutate(nodeid = get_mra(node, node2))
+      if (length(setdiff(tree@nodes, as.character(regimesdf$nodeid))) > 0) {
+        print(setdiff(tree@nodes, as.character(regimesdf$nodeid)))
+        stop("There are tree nodes for which regime has not been set!!")
+      }
       regimesdf = regimesdf[order(regimesdf$nodeid),]
       regimes <<- data.frame(regimes=factor(regimesdf$regime))
       #print(regimes)

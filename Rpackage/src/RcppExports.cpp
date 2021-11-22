@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // brown_fit
 List brown_fit(int nterm, int nrep, const NumericVector& dat, const NumericMatrix& bt, double gamma);
 RcppExport SEXP _EvoGeneX_brown_fit(SEXP ntermSEXP, SEXP nrepSEXP, SEXP datSEXP, SEXP btSEXP, SEXP gammaSEXP) {
