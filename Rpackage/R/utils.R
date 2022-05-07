@@ -1,3 +1,41 @@
+prepare_replicated_data <- function(data,
+                                    format = c("wide", "tall"),
+                                    species_col = "species",
+                                    replicate_col = "replicate",
+                                    exprval_col = "exprval",
+                                    tree) {
+  format <- match.arg(format)
+  data <- as.data.frame(data)
+  if (!(species_col %in% names(data))) {
+    stop("`", species_col, "` is not in data column names")
+  }
+  if (format == "wide") {
+    data <- data %>% gather(!!replicate_col, !!exprval_col, -!!species_col)
+  } else {
+    if (!(replicate_col %in% names(data))) {
+      stop("`", replicate_col, "` is not in data column names")
+    }
+    if (!(exprval_col %in% names(data))) {
+      stop("`", exprval_col, "` is not in data column names")
+    }
+    data <- data %>% select(!!species_col, !!replicate_col, !!exprval_col)
+  }
+  #print(data)
+  terms <- as.character(tree@term)
+  #print(terms)
+  otd <- (
+    as(tree, 'data.frame')
+    #%>% {print(.); .}
+    %>% full_join(data, by = c("labels" = species_col))
+    #%>% {print(.); .}
+    %>% filter(nodes %in% terms)
+    #%>% {print(.); .}
+    %>% arrange(factor(nodes, levels = terms, ordered = TRUE), !!replicate_col)
+  )
+  #print(otd)
+  pull(otd, !!exprval_col)
+}
+
 glssoln <- function (a, x, v, tol = sqrt(.Machine$double.eps)) {
   n <- length(x)
   vh <- try(

@@ -1,44 +1,44 @@
 #' EvoGeneX class implementation
 #'
 #' @import methods
-#' @importFrom tidyr gather
+#' @import reshape2
+#' @import tidyr
 #' @export EvoGeneX
 #' @exportClass EvoGeneX
 
 
-EvoGeneX = setRefClass("EvoGeneX",
+EvoGeneX <- setRefClass("EvoGeneX",
   contains = "BaseModel",
-  fields=list(regimes="data.frame", packed_beta="integer"),
-  methods=list(
+  fields = list(regimes = "data.frame", packed_beta = "integer"),
+  methods = list(
     setRegimes = function(regimefile) {
-      regimesdf = read.csv(regimefile, header=T, stringsAsFactors=F)
-      nodelabels = tree@nodelabels
-      lineages = tree@lineages
+      regimesdf <- read.csv(regimefile, stringsAsFactors = FALSE)
+      nodelabels <- tree@nodelabels
+      lineages <- tree@lineages
       get_mra <- function(lab1, lab2) {
         if (lab2 %in% c("", NA)) {
           # use node label directly
           return(which(nodelabels == lab1))
         } else {
           # find most recent ancestor of two leaves given by the labels
-          id1 = which(nodelabels == lab1)
-          id2 = which(nodelabels == lab2)
-          lineage1 = rev(lineages[[id1]])
-          lineage2 = rev(lineages[[id2]])
-          i = 1
-          while (lineage1[i] == lineage2[i]) i = i + 1
+          id1 <- which(nodelabels == lab1)
+          id2 <- which(nodelabels == lab2)
+          lineage1 <- rev(lineages[[id1]])
+          lineage2 <- rev(lineages[[id2]])
+          i <- 1
+          while (lineage1[i] == lineage2[i]) i <- i + 1
           return(lineage1[[i-1]])
         }
       }
       regimesdf <- rowwise(regimesdf) %>% mutate(nodeid = get_mra(node, node2))
       if (length(setdiff(tree@nodes, as.character(regimesdf$nodeid))) > 0) {
-        print(setdiff(tree@nodes, as.character(regimesdf$nodeid)))
-        stop("There are tree nodes for which regime has not been set!!")
+        stop("There are tree nodes (",
+          setdiff(tree@nodes, as.character(regimesdf$nodeid)),
+          ") for which regime has not been set!!")
       }
-      regimesdf = regimesdf[order(regimesdf$nodeid),]
+      regimesdf <- regimesdf[order(regimesdf$nodeid),]
       regimes <<- data.frame(regimes=factor(regimesdf$regime))
-      #print(regimes)
       packed_beta <<- getBetaCompact(tree,regimes)
-      #print(packed_beta)
     },
     getWeights = function(nrep, beta, alpha) {
       nt = tree@nterm
@@ -155,7 +155,7 @@ EvoGeneX = setRefClass("EvoGeneX",
       tmp$nodes <- NULL
       tmp$labels <- NULL
       tmp = tmp[as.character(tree@term),]
-      dat = gather(data.frame(t(tmp)))$value
+      dat = tidyr::gather(data.frame(t(tmp)))$value
       nrep <- ncol(data)
       beta <- getBeta(tree,regimes)
       optim.diagn <- vector(mode='list',length=0)
@@ -198,12 +198,12 @@ EvoGeneX = setRefClass("EvoGeneX",
 
 
     fitSlow = function(data, alpha, gamma,
-                   spe_col = 'species', rep_col = 'replicate', exp_col = 'expval',
+                   species_col = 'species', replicate_col = 'replicate', exprval_col = 'exprval',
                    lb = 1e-10, ub = 1e+10,...) {
-      dat = data[c(spe_col, rep_col, exp_col)]
-      names(dat) = c('species', 'replicate', 'expval')
+      dat = data[c(species_col, replicate_col, exprval_col)]
+      names(dat) = c('species', 'replicate', 'exprval')
       replicates = unique(dat$replicate)
-      dat = dcast(dat, species~replicate, value.var='expval')
+      dat = dcast(dat, species~replicate, value.var='exprval')
       otd = as(tree, 'data.frame')
       tmp <- merge(otd, data.frame(dat), by.x='labels', by.y='species', all=TRUE)
       # merging destroys index of dataframe
@@ -256,39 +256,44 @@ EvoGeneX = setRefClass("EvoGeneX",
     # dmel,R1,123.456 and so on
 
     fit = function(data, alpha, gamma,
-                   spe_col = 'species', rep_col = 'replicate', exp_col = 'expval',
-                   lb = 1e-10, ub = 1e+10,...) {
-      dat = data[c(spe_col, rep_col, exp_col)]
-      names(dat) = c('species', 'replicate', 'expval')
-      replicates = unique(dat$replicate)
-      dat = dcast(dat, species~replicate, value.var='expval')
-      otd = as(tree, 'data.frame')
-      tmp <- merge(otd, data.frame(dat), by.x='labels', by.y='species', all=TRUE)
-      # merging destroys index of dataframe
-      rownames(tmp) <- tmp$nodes
-      tmp = tmp[as.character(tree@term), replicates, drop=FALSE]
-      dat = gather(data.frame(t(tmp)))$value
+                   format = "wide",
+                   species_col = 'species',
+                   replicate_col = 'replicate',
+                   exprval_col = 'exprval',
+                   lb = 1e-10,
+                   ub = 1e+10,
+                   ...) {
+      dat <- prepare_replicated_data(data,
+                                     format,
+                                     species_col,
+                                     replicate_col,
+                                     exprval_col,
+                                     tree)
 
-      opt <- evogenex_fit(dat=dat, nterm=tree@nterm, nreg=nlevels(regimes$regimes),
-                          nrep=length(replicates), nbranch=nbranch, beta=packed_beta,
-                          epochs=packed_epochs, bt=tree@branch.times,
-                          alpha=alpha, gamma=gamma)
+      opt <- evogenex_fit(dat = dat,
+                          nterm = tree@nterm,
+                          nreg = nlevels(regimes$regimes),
+                          nrep = length(dat)/tree@nterm,
+                          nbranch = nbranch,
+                          beta = packed_beta,
+                          epochs = packed_epochs,
+                          bt = tree@branch.times,
+                          alpha = alpha,
+                          gamma = gamma)
 
-      if (!((opt$status>=1) && (opt$status <= 4))) {
-        message("unsuccessful convergence, code ", opt$status, ", see documentation for ", 'nloptr')
-        warning("unsuccessful convergence, message ", opt$message)
+      if (!((opt$status >= 1) && (opt$status <= 4))) {
+        warning("unsuccessful convergence, message ", opt$message,
+                ", code ", opt$status, ", see documentation for nloptr")
       }
 
-      optim.diagn <- list(convergence=opt$status,message=opt$message)
+      optim.diagn <- list(convergence = opt$status, message = opt$message)
 
-      list(optim.diagn=optim.diagn,
-        theta=setNames(opt$theta, levels(regimes$regimes)),
-        alpha=opt$alpha,
-        sigma.sq=opt$sigma.sq,
-        gamma=opt$gamma,
-        loglik=opt$loglik
-      )
+      list(optim.diagn = optim.diagn,
+           theta = setNames(opt$theta, levels(regimes$regimes)),
+           alpha = opt$alpha,
+           sigma.sq = opt$sigma.sq,
+           gamma = opt$gamma,
+           loglik = opt$loglik)
     }
   )
 )
-

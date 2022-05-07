@@ -115,28 +115,32 @@ Brown = setRefClass("Brown",
     },
 
     fit = function(data, gamma,
-                   spe_col = 'species', rep_col = 'replicate', exp_col = 'expval',
-                   lb = 1e-10, ub = 1e+10,...) {
-      dat = data[c(spe_col, rep_col, exp_col)]
-      names(dat) = c('species', 'replicate', 'expval')
-      replicates = unique(dat$replicate)
-      dat = dcast(dat, species~replicate, value.var='expval')
-      otd = as(tree, 'data.frame')
-      tmp <- merge(otd, data.frame(dat), by.x='labels', by.y='species', all=TRUE)
-      # merging destroys index of dataframe
-      rownames(tmp) <- tmp$nodes
-      tmp = tmp[as.character(tree@term), replicates, drop=FALSE]
-      dat = gather(data.frame(t(tmp)))$value
-      nrep = length(replicates)
+                   format = "wide",
+                   species_col = 'species',
+                   replicate_col = 'replicate',
+                   exprval_col = 'exprval',
+                   lb = 1e-10,
+                   ub = 1e+10,
+                   ...) {
+      dat <- prepare_replicated_data(data,
+                                     format,
+                                     species_col,
+                                     replicate_col,
+                                     exprval_col,
+                                     tree)
 
-      opt <- brown_fit(dat=dat, nterm=tree@nterm, nrep=nrep, bt=tree@branch.times, gamma=gamma)
+      opt <- brown_fit(dat = dat,
+                       nterm = tree@nterm,
+                       nrep = length(dat)/tree@nterm,
+                       bt = tree@branch.times,
+                       gamma = gamma)
 
-      if (!((opt$status>=1) && (opt$status <= 4))) {
-        message("unsuccessful convergence, code ", opt$status, ", see documentation for ", 'nloptr')
-        warning("unsuccessful convergence, message ", opt$message)
+      if (!((opt$status >= 1) && (opt$status <= 4))) {
+        warning("unsuccessful convergence, message ", opt$message,
+                ", code ", opt$status, ", see documentation for nloptr")
       }
 
-      optim.diagn <- list(convergence=opt$status,message=opt$message)
+      optim.diagn <- list(convergence = opt$status, message = opt$message)
 
       list(optim.diagn=optim.diagn,
         theta=setNames(opt$theta, levels(regimes$regimes)),
