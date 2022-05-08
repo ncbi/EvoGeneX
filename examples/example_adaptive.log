@@ -17,20 +17,44 @@ NULL
 
 
 $theta
-  global    local 
-185.7422 345.4954 
+  global 
+247.6608 
 
 $alpha
-[1] 22.31994
+[1] 13.76675
 
 $sigma.sq
-[1] 990735.4
+[1] 785188.3
 
 $gamma
-[1] 0.002218474
+[1] 0.002799634
 
 $loglik
-[1] -205.9526
+[1] -206.8637
+
+$optim.diagn
+$optim.diagn$convergence
+[1] 1
+
+$optim.diagn$message
+NULL
+
+
+$theta
+  global 
+247.6608 
+
+$alpha
+[1] 13.76675
+
+$sigma.sq
+[1] 785188.3
+
+$gamma
+[1] 0.002799634
+
+$loglik
+[1] -206.8637
 
 $optim.diagn
 $optim.diagn$convergence
@@ -52,3 +76,6 @@ $gamma
 $loglik
 [1] -209.7939
 
+[1] 0.05338773
+[1] 1
+[1] "not-adaptive"

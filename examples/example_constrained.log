@@ -8,67 +8,6 @@
 7    dvir 543.9844 696.80922 663.95690 785.1595
 8    dwil 155.7480 214.93546 282.80718 316.0916
 9    dyak 106.0654 117.31824 102.06957 108.0820
-   species replicate   exprval
-1     dana        R1 204.58850
-2     dgri        R1 318.43200
-3     dmel        R1 241.24080
-4     dmoj        R1 132.76570
-5     dper        R1 107.19320
-6     dpse        R1 245.14030
-7     dvir        R1 543.98440
-8     dwil        R1 155.74800
-9     dyak        R1 106.06540
-10    dana        R2 148.66722
-11    dgri        R2 258.96714
-12    dmel        R2 212.74946
-13    dmoj        R2  69.73923
-14    dper        R2 109.08483
-15    dpse        R2 188.31841
-16    dvir        R2 696.80922
-17    dwil        R2 214.93546
-18    dyak        R2 117.31824
-19    dana        R3 230.49887
-20    dgri        R3 240.11517
-21    dmel        R3 204.11434
-22    dmoj        R3  65.77837
-23    dper        R3 124.48701
-24    dpse        R3 228.28671
-25    dvir        R3 663.95690
-26    dwil        R3 282.80718
-27    dyak        R3 102.06957
-28    dana        R4 199.31920
-29    dgri        R4 259.69030
-30    dmel        R4 190.56410
-31    dmoj        R4 110.69770
-32    dper        R4 140.87480
-33    dpse        R4 211.39060
-34    dvir        R4 785.15950
-35    dwil        R4 316.09160
-36    dyak        R4 108.08200
-$optim.diagn
-$optim.diagn$convergence
-[1] 1
-
-$optim.diagn$message
-NULL
-
-
-$theta
-  global 
-247.6608 
-
-$alpha
-[1] 13.76675
-
-$sigma.sq
-[1] 785188.3
-
-$gamma
-[1] 0.002799634
-
-$loglik
-[1] -206.8637
-
 $optim.diagn
 $optim.diagn$convergence
 [1] 1
@@ -113,23 +52,6 @@ $gamma
 $loglik
 [1] -209.7939
 
-$optim.diagn
-$optim.diagn$convergence
-[1] 1
-
-$optim.diagn$message
-NULL
-
-
-$theta
-[1] 285.5768
-
-$sigma.sq
-[1] 167801.1
-
-$gamma
-[1] 0.01346066
-
-$loglik
-[1] -209.7939
-
+[1] 0.01548573
+[1] 0.01548573
+[1] "constrained"
