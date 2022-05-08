@@ -12,7 +12,6 @@ install_github("ncbi/EvoGeneX", subdir="Rpackage")
 
 #### Examples
 
-```
-examples/example1.R
-examples/example2.R
-```
+- `examples/example_constrained.R` shows how to determine if a gene is constrained or neutral
+- `examples/example_adaptive.R` shows how to determine if a gene is adaptive or not
+- `examples/example_multigene.R` shows how to determine if a set of genes are individually constrained or neutral
