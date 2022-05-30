@@ -1,0 +1,282 @@
+---
+title: "Introduction to Package EvoGeneX"
+author: "Soumitra Pal"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    theme: cerulean
+vignette: >
+  %\VignetteIndexEntry{Introduction to Package EvoGeneX}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+
+EvoGeneX is a package to infer mode of gene expression evolution from expression data.
+
+```{r results='hide', message=FALSE, warning=FALSE}
+library(tidyverse)
+library(EvoGeneX)
+library(png)
+library(knitr)
+library(ape)
+```
+
+# Input to EvoGeneX
+
+In addition to the expression data, EvoGeneX needs 1) a phylogenetic tree, and 2) information about different regimes operating on different parts of the phylogenetic tree.
+
+
+## Phylogenetic tree
+
+The phylogenetic tree should have exactly the set of species for which gene expression data is collected as the leaf nodes. It must have numeric length on the branches abstracting evolutionary time since the root denoting the most recent ancestor of the species under study. It should be specified in Newick format. A copy of the nine-species Drosphila phylogeny used in the EvoGeneX paper is kept at `inst/extdata/drosophila9.newick`.
+
+```{r}
+dros9_newick_file <- system.file("extdata", "drosophila9.newick", package = "EvoGeneX")
+phylo_tree <- read.tree(dros9_newick_file)
+plot(phylo_tree)
+```
+
+## Regime specification
+
+If EvoGeneX is used to infer about adaptation of expression towards different parts
+ of the phylogenetic tree, it must be specified as a data frame containing three columns each taking string values: 1) `node`, 2) `node2` and 3) `regime` and as many rows as the nodes in the tree including the non-leaf internal nodes. For the leaf nodes, `node` gives species name, `regime` gives a name for the regime and `node2` is kept empty. Each internal node `x` is specified by two leaf species `node` and `node2` such that `x` is the most recent common ancestor of `node` and `node2`. Note that `x` can be specified using different combinations of `node` and `node2`, use any one of them.
+
+If EvoGeneX is used to infer if a gene evolved in a constrained way, not necessarily in an adaptive way, all nodes in the tree are assumed to be in a single regime. Nevertheless, and we need to specify that in a file as given in `inst/extdata/regime_global.csv`.
+
+```{r}
+single_regime_file <- system.file("extdata", "regime_global.csv", package = "EvoGeneX")
+single_regime <- read.csv(single_regime_file)
+single_regime
+```
+
+## Expression Data
+
+EvoGeneX needs exactly `nspecies` x `nreplicate` expression values where `nspecies` and `nreplicate` denote the number of species and replicates, respectively. Currently, EvoGeneX does not support missing values of a few replicates of some of the species, which may be supported in a future version. These `nspecies` x `nreplicate` expression values can be provided as a R `data.frame` either in the matrix (`wide`) or vector format (`tall`).
+
+In the `wide` format the `data.frame` must contain a column for the species and the rest of the columns will be treated as replicates. The default name of the species column is `species` though it can be changed through the `species_col` parameter of the `fit` function (see below). There must be exactly `nspecies` number of rows. An example expression data for 9 Drosophila species in 4 replicates is given in `inst/extdata/HD_M_FBgn0000008.csv`.
+
+```{r}
+
+sample_data_file <- system.file("extdata", "HD_M_FBgn0000008.csv", package = "EvoGeneX")
+wide <- read.csv(sample_data_file)
+wide
+```
+
+In the `tall` format the `data.frame` must contain at least 3 columns for the species, replicates and expression values and the rest of the columns will simply be ignored. The default name of the 3 columns are `species`, `replicate` and `exprval`, respectively, though they can be changed through the parameters `species_col`, `replicate_col` and `exprval_col`, respectively, of the `fit` function. Note that the parameters `replicate_col` and `exprval_col` are not relevant in `wide` format. There must be exactly `nspecies` x `nreplicate` number of rows in `tall` format. Following code shows the same example expression data in `tall` format.
+
+
+```{r}
+tall <- wide %>% gather("replicate", "exprval", -species)
+tall
+```
+
+
+# Check gene for constrained expression evolution
+
+Now we show how to infer whether the expression of the gene in the example data evolved neutrally or in a constrained manner. The example script `examples/example_constrained.R` gives the complete code used in this section.
+
+## Setup EvoGeneX object with species tree and single-regime
+
+```{r}
+evog <- EvoGeneX()
+evog$setTree(dros9_newick_file)
+evog$setRegimes(single_regime_file)
+```
+
+## Fit replicated Ornstein-Uhlenbeck model
+
+```{r}
+ou_res <- evog$fit(wide, alpha = 0.1, gamma = 0.01)
+print(ou_res)
+```
+
+## Fit replicated Brownian Motion model
+
+We decide whether a gene has evolved neutrally or in a constrained manner by fitting the data to both replicated models, Ornstein-Uhlenbeck and Brownian Motion and checking which model is most likely supported
+ by the data. So we fit the data to the replicated Brownian Motion model as
+ well.
+ 
+```{r}
+brown <- Brown()
+brown$setTree(dros9_newick_file)
+
+brown_res <- brown$fit(wide, gamma = 0.01)
+print(brown_res)
+```
+
+## Infer constrained or neutral
+
+We use log-likelihood ratio test to check which model most likely support the data. That is implemented by $\chi^2$ test on the test statistics -2 * (log-likelihood in null model - loglikelihood in alternate model)) taking Brownian motion as null and OU as alternate.
+
+```{r}
+# degrees of freedom under different models
+ou_dof <- (
+  1   # alpha
+  + 1 # sigma.sq
+  + 1 # theta
+  + 1 # gamma
+)
+brown_dof <- (
+  1   # sigma.sq
+  + 1 # theta
+  + 1 # gamma
+)
+
+# loglikelihood ratio test OU VS Brownian motion
+pvalue <- 1 - pchisq((ou_res$loglik - brown_res$loglik) * 2,
+                     (ou_dof - brown_dof))
+
+constrained_vs_neutral <- ifelse(pvalue < 0.05, "constrained", "neutral")
+constrained_vs_neutral
+```
+
+# Check gene for adpative expression evolution
+
+Now we show how to infer whether the expression of the gene in the example data evolved in an adaptive manner. The example script `examples/example_adaptive.R` gives the complete code used in this section.
+
+## Multi-regime
+
+To test if a gene's expression evolved in an adaptive manner, we need to specify at least two regimes and which of the nodes in the phylogenetic tree including the non-leaf internal nodes belong to each of the regimes. Here we consider a two-regime example where the species in Drosophila and Sophophora sub-genra belong to different regimes.
+
+```{r}
+two_regime_image <- system.file("extdata", "phylogeny_two_regime.png", package = "EvoGeneX")
+knitr::include_graphics(two_regime_image)
+```
+
+```{r}
+two_regime_file <- system.file("extdata", "regime_tworegime.csv", package = "EvoGeneX")
+two_regime <- read.csv(two_regime_file)
+two_regime
+```
+
+
+## Fit data and infer adaptive evolution
+
+Like constrained case, we call a gene adaptive if both the neutral Bownian Motion model and constrained model (OU with a single optimum expression) are rejected in favor of adaptive evolution model (OU with multiple optima).
+
+```{r}
+evog2 <- EvoGeneX()
+evog2$setTree(dros9_newick_file)
+evog2$setRegimes(two_regime_file)
+
+ou2_res <- evog$fit(wide, alpha = 0.1, gamma = 0.01)
+print(ou2_res)
+
+# degrees of freedom under different models
+ou2_dof <- (
+  1   # alpha
+  + 1 # sigma.sq
+  + 2 # theta
+  + 1 # gamma
+)
+
+# loglikelihood ratio test OU2 VS replicated Brownian Motion
+ou2_vs_bm_pvalue <- 1 - pchisq((ou2_res$loglik - brown_res$loglik) * 2,
+                               (ou2_dof - brown_dof))
+
+# loglikelihood ratio test OU2 VS OU
+ou2_vs_ou_pvalue <- 1 - pchisq((ou2_res$loglik - ou_res$loglik) * 2,
+                               (ou2_dof - ou_dof))
+
+# gene is adaptive if both OU2vsBM and OU2vsOU tests are successfull
+is_adaptive <- ifelse(max(ou2_vs_bm_pvalue, ou2_vs_ou_pvalue) < 0.05,
+                      "adaptive", "not-adaptive")
+
+is_adaptive
+```
+# Drosophila datasets
+
+In the main paper for EvoGeneX, we apply EvoGeneX to replicated gene expression
+(bulk RNA-seq) data from 5 different body-parts of both sexes from 9 Drosophila
+species. The EvoGeneX package includes this Drosophila data which can be
+accessed using \code{data()} function.
+
+```{r, warning = TRUE, error = TRUE}
+# Describe the data in the package
+data(package="EvoGeneX")
+```
+
+```{r}
+# Access one example body-part sample
+data(FemaleHead, package = "EvoGeneX")
+head(FemaleHead)
+```
+
+# Repeat for multiple genes
+
+Here we show how we can check multiple genes for constrained expression evolution using Drosophila dataset. Similar can be done for adaptive evolution.
+
+```{r}
+# take 5 genes from FemaleHead dataset
+df <- FemaleHead[1:5,]
+
+# setup EvoGeneX object
+evog <- EvoGeneX()
+evog$setTree(dros9_newick_file)
+evog$setRegimes(single_regime_file)
+
+# setup Brown object
+brown <- Brown()
+brown$setTree(dros9_newick_file)
+
+# degrees of freedom under different models
+ou_dof <- (
+  1   # alpha
+  + 1 # sigma.sq
+  + 1 # theta
+  + 1 # gamma
+)
+brown_dof <- (
+  1   # sigma.sq
+  + 1 # theta
+  + 1 # gamma
+)
+
+fdr_cutoff <- 0.05
+
+process_single_gene <- function(data_wide) {
+  # process single gene
+  # all 36 expression values are in a single row
+  # need convert it to either 'wide' or 'tall' format
+  # we convert into 'tall' format
+  data_tall <- (
+    data_wide
+    %>% gather("sample", "exprval")
+    %>% separate(sample,  c("sex", "tissue", "species", "replicate"))
+    %>% select("species", "replicate", "exprval")
+  )
+
+  ou_res <- evog$fit(data_tall, format = "tall", alpha = 0.1, gamma = 0.01)
+  brown_res <- brown$fit(data_tall, format = "tall", gamma = 0.01)
+
+  # loglikelihood ratio test EvoGeneX VS replicated Brownian motion
+  pvalue <- 1 - pchisq((ou_res$loglik - brown_res$loglik) * 2,
+                       (ou_dof - brown_dof))
+}
+
+res <- (
+  df
+  %>% group_by(FBgnDmel, SymbolDmel)
+  %>% summarize(pvalue = process_single_gene(cur_data()), .groups = "keep")
+  %>% ungroup()
+  %>% mutate(qvalue = p.adjust(pvalue, method = "fdr"))
+  %>% mutate(constrained_vs_neutral = ifelse(qvalue < fdr_cutoff,
+                                              "constrained", "neutral"))
+)
+```
+
+# Citation
+```{r}
+citation("EvoGeneX")
+```
+
+# Session information
+
+```{r}
+devtools::session_info()
+```

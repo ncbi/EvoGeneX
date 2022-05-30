@@ -1,0 +1,27 @@
+citHeader("To cite EvoGeneX in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title    = paste(
+    "Stochastic modeling of gene expression evolution uncovers tissue and sex",
+    "specific properties of expression evolution in the Drosophila genus"
+  ),
+  author   = c(
+    person(c("Soumitra", ""), "Pal"),
+    person(c("Brian", "C."), "Oliver"),
+    person(c("Teresa", "M."), "Przytycka")
+  ),
+  journal  = "Journal of Computational Biology",
+  year     = "2022",
+  volume   = "xx",
+  number   = "yy",
+  pages    = "ppp",
+  doi      = "10.1101/2020.01.06.895615",
+  textVersion = paste(
+    "Soumitra Pal, Brian C. Oliver, and Teresa M. Przytycka.",
+    "Modeling gene expression evolution with EvoGeneX uncovers",
+    "differences in evolution of species, organs and sexes.",
+    "bioRxiv (2021): 2020-01.",
+    "<10.1101/2020.01.06.895615>."
+  )
+)
