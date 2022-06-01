@@ -18,7 +18,7 @@ public:
     const NumericVector &beta;
     const NumericVector &epochs;
     const NumericMatrix &bt;
-    const Map<VectorXd> &dat;
+    const Map<VectorXd> dat;
 #if KEEP_LOG
     ofstream out;
     int fcount;
