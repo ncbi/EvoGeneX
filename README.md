@@ -10,6 +10,14 @@ library(devtools)
 install_github("ncbi/EvoGeneX", subdir="Rpackage")
 ```
 
+#### Vignettes
+
+Within an R session:
+```
+vignette("EvoGeneX", package="EvoGeneX")
+```
+`
+
 #### Examples
 
 - `examples/example_constrained.R` shows how to determine if a gene is constrained or neutral
