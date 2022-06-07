@@ -11,7 +11,7 @@ devtools::install_github("ncbi/EvoGeneX", subdir="Rpackage", build_vignettes=TRU
 
 #### Vignettes
 
-See [vignette](Rpackage/vignettes/EvoGeneX.html).
+See [vignette](https://rawcdn.githack.com/ncbi/EvoGeneX/56a4e2d5c7c98eb57983d2d67d89fcfb61beb076/Rpackage/vignettes/EvoGeneX.html).
 
 Within an R session:
 ```
@@ -27,7 +27,7 @@ vignette("EvoGeneX", package="EvoGeneX")
 
 #### Drosophila data to access from R
 
-See [vignette](Rpackage/vignettes/EvoGeneX.html).
+See [vignette](https://rawcdn.githack.com/ncbi/EvoGeneX/56a4e2d5c7c98eb57983d2d67d89fcfb61beb076/Rpackage/vignettes/EvoGeneX.html).
 
 #### Drosophila data and results in MS Excel format
 
