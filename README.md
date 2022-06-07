@@ -27,7 +27,7 @@ vignette("EvoGeneX", package="EvoGeneX")
 
 #### Drosophila data to access from R
 
-See [vignette](https://rawcdn.githack.com/ncbi/EvoGeneX/56a4e2d5c7c98eb57983d2d67d89fcfb61beb076/Rpackage/vignettes/EvoGeneX.html).
+See [vignette](https://rawcdn.githack.com/ncbi/EvoGeneX/56a4e2d5c7c98eb57983d2d67d89fcfb61beb076/Rpackage/vignettes/EvoGeneX.html#4_Drosophila_datasets).
 
 #### Drosophila data and results in MS Excel format
 
