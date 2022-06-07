@@ -194,7 +194,7 @@ is_adaptive
 In the main paper for EvoGeneX, we apply EvoGeneX to replicated gene expression
 (bulk RNA-seq) data from 5 different body-parts of both sexes from 9 Drosophila
 species. The EvoGeneX package includes this Drosophila data which can be
-accessed using \code{data()} function.
+accessed using R `data` function.
 
 ```{r, warning = TRUE, error = TRUE}
 # Describe the data in the package
@@ -239,13 +239,13 @@ brown_dof <- (
 
 fdr_cutoff <- 0.05
 
-process_single_gene <- function(data_wide) {
+process_single_gene <- function(data_row) {
   # process single gene
   # all 36 expression values are in a single row
   # need convert it to either 'wide' or 'tall' format
   # we convert into 'tall' format
   data_tall <- (
-    data_wide
+    data_row
     %>% gather("sample", "exprval")
     %>% separate(sample,  c("sex", "tissue", "species", "replicate"))
     %>% select("species", "replicate", "exprval")
