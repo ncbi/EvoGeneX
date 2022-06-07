@@ -17,7 +17,6 @@ Within an R session:
 ```
 vignette("EvoGeneX", package="EvoGeneX")
 ```
-`
 
 #### Examples
 
