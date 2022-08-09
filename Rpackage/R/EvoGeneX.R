@@ -266,17 +266,20 @@ EvoGeneX <- setRefClass("EvoGeneX",
                    lb = 1e-10,
                    ub = 1e+10,
                    ...) {
-      dat <- prepare_replicated_data(data,
+      dat_nrep <- prepare_replicated_data(data,
                                      format,
                                      species_col,
                                      replicate_col,
                                      exprval_col,
                                      tree)
 
+      dat <- dat_nrep$dat
+      nrep <- dat_nrep$nrep
+
       opt <- evogenex_fit(dat = dat,
                           nterm = tree@nterm,
                           nreg = nlevels(regimes$regimes),
-                          nrep = length(dat)/tree@nterm,
+                          nrep = nrep,
                           nbranch = nbranch,
                           beta = packed_beta,
                           epochs = packed_epochs,

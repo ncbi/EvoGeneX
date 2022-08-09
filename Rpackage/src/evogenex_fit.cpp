@@ -26,14 +26,18 @@ double mybrown(unsigned n, const double *x, double *grad, void *data)
 
 
 // [[Rcpp::export]]
-List brown_fit(int nterm, int nrep,
+List brown_fit(int nterm, const IntegerVector nrep,
         const NumericVector &dat,
         const NumericMatrix &bt,
         double gamma)
 {
 #if KEEP_LOG
     printf("nterm=%d\n", nterm);
-    printf("nrep=%d\n", nrep);
+    cout << "nrep: " << endl;
+    for (int i=0; i<nrep.length(); i++) { 
+            cout << " " << nrep[i]; 
+    } 
+    cout << endl;
     cout << "gamma: " << gamma << endl; 
     cout << "bt: ";
     for (int i=0; i<nterm; i++) {
@@ -84,7 +88,9 @@ List brown_fit(int nterm, int nrep,
 
 
 // [[Rcpp::export]]
-List evogenex_fit(int nterm, int nrep, int nreg,
+List evogenex_fit(int nterm, 
+        const IntegerVector nrep, 
+        int nreg,
         const NumericVector &dat,
         const NumericVector &nbranch,
         const NumericVector &beta,
@@ -94,7 +100,7 @@ List evogenex_fit(int nterm, int nrep, int nreg,
 {
 #if KEEP_LOG
     printf("nterm=%d\n", nterm);
-    printf("nrep=%d\n", nrep);
+    // printf("nrep=%d\n", nrep);
     printf("nreg=%d\n", nreg);
     cout << "nbranch: ";
     for (auto v:nbranch) { cout << " " << v; } cout << endl;
@@ -109,7 +115,7 @@ List evogenex_fit(int nterm, int nrep, int nreg,
 #endif
 
     MLE mle(nterm, nrep, nreg, alpha, gamma, nbranch, beta, epochs, bt, dat);
-
+    
     double lb[2] = { 1e-10, 1e-10 }; 		// lower bounds
     double ub[2] = { 1e+10, 1e+10 }; 		// upper bounds
 

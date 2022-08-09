@@ -6,7 +6,7 @@
 class MLE {
 public:
     int nterm;
-    int nrep;
+    const IntegerVector nrep;
     int nreg;
     int n;
     double alpha;
@@ -19,6 +19,7 @@ public:
     const NumericVector &epochs;
     const NumericMatrix &bt;
     const Map<VectorXd> dat;
+    std::vector<int> nrep_sums;
 #if KEEP_LOG
     ofstream out;
     int fcount;
@@ -27,7 +28,7 @@ public:
     MatrixXd V;
     VectorXd theta;
     MLE(int _nterm,
-        int _nrep,
+        const IntegerVector &_nrep,
         int _nreg,
         double _alpha,
         double _gamma,
@@ -37,13 +38,14 @@ public:
         const NumericMatrix &_bt,
         const NumericVector &_dat
     ): nterm(_nterm), nrep(_nrep), nreg(_nreg),
-    n(_nterm * _nrep), alpha(_alpha), gamma(_gamma),
+    n(std::accumulate(nrep.begin(), nrep.end(), 0)), alpha(_alpha), gamma(_gamma),
     par{alpha, gamma},
     nbranch(_nbranch),
     beta(_beta),
     epochs(_epochs),
     bt(_bt),
     dat(as<Map<VectorXd> >(_dat)),
+    nrep_sums(nterm),
 #if KEEP_LOG
     out("fast.log"),
     fcount(0),
@@ -52,6 +54,8 @@ public:
     V(n, n),
     theta(nreg)
     {
+        std::partial_sum(nrep.begin(), nrep.end(), nrep_sums.begin());
+        nrep_sums.insert(nrep_sums.begin(), 0);
     }
     void computeWeights() {
         int index = 0;
@@ -79,8 +83,8 @@ public:
                 }
                 //cout << endl;
                 //cout << "Dotp   " << dotp << endl;
-                for (int rep=0; rep<nrep; rep++) {
-                    int row = rep + term*nrep;
+                for (int rep=0; rep<nrep[term]; rep++) {
+                    int row = rep + nrep_sums[term];
                     //cout << "row=" << row << endl;
                     W(row,reg) = dotp;
                 }
@@ -91,14 +95,14 @@ public:
 
     void computeCovars() {
         for (int termi=0; termi<nterm; termi++) {
-            for (int repk=0; repk<nrep; repk++) {
+            for (int repk=0; repk<nrep[termi]; repk++) {
                 for (int termj=0; termj<nterm; termj++) {
-                    for (int repl=0; repl<nrep; repl++) {
-                        int p = repk + termi*nrep;
-                        int q = repl + termj*nrep;
-                        double ii = bt[termi + termi*nterm];
-                        double jj = bt[termj + termj*nterm];
-                        double ij = bt[termi + termj*nterm];
+                    for (int repl=0; repl<nrep[termj]; repl++) {
+                        int p = repk + nrep_sums[termi];
+                        int q = repl + nrep_sums[termj];
+                        double ii = bt(termi, termi);
+                        double jj = bt(termj, termj);
+                        double ij = bt(termi, termj);
                         double part1 = exp(alpha*(-ii - jj + 2*ij));
                         double part2 = (1-exp(-2*alpha*ij));
                         V(p,q) = part1*part2/(2*alpha);
@@ -120,7 +124,7 @@ public:
         fcount++;
         out << "###################### IN ComputeLogLik ########################" << endl;
         out << "n: " << n << endl;
-        out << "nrep: " << nrep << endl;
+        // out << "nrep: " << nrep << endl;
         out << "alpha: " << alpha << endl;
         out << "gamma: " << gamma << endl;
 #endif

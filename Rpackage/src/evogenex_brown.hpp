@@ -6,7 +6,7 @@
 class MLE_Brown {
 public:
     int nterm;
-    int nrep;
+    const IntegerVector nrep;
     int n;
     double gamma;
     double sigmasq;
@@ -14,6 +14,7 @@ public:
     std::vector<double> par;
     const NumericMatrix &bt;
     const Map<VectorXd> dat;
+    std::vector<int> nrep_sums;
 #if KEEP_LOG
     ofstream out;
     int fcount;
@@ -22,16 +23,17 @@ public:
     MatrixXd V;
     VectorXd theta;
     MLE_Brown(int _nterm,
-        int _nrep,
+        const IntegerVector _nrep,
         double _gamma,
         const NumericMatrix &_bt,
         const NumericVector &_dat
     ): nterm(_nterm), nrep(_nrep),
-    n(_nterm * _nrep),
+    n(std::accumulate(nrep.begin(), nrep.end(), 0)),
     gamma(_gamma),
     par{gamma, 0},
     bt(_bt),
     dat(as<Map<VectorXd> >(_dat)),
+    nrep_sums(nterm),
 #if KEEP_LOG
     out("fast_brown.log"),
     fcount(0),
@@ -40,16 +42,18 @@ public:
     V(n, n),
     theta(1)
     {
+        std::partial_sum(nrep.begin(), nrep.end(), nrep_sums.begin());
+        nrep_sums.insert(nrep_sums.begin(), 0);
     }
 
     void computeCovars() {
         for (int termi=0; termi<nterm; termi++) {
-            for (int repk=0; repk<nrep; repk++) {
+            for (int repk=0; repk<nrep[termi]; repk++) {
                 for (int termj=0; termj<nterm; termj++) {
-                    for (int repl=0; repl<nrep; repl++) {
-                        int p = repk + termi*nrep;
-                        int q = repl + termj*nrep;
-                        V(p,q) = bt[termi + termj*nterm];
+                    for (int repl=0; repl<nrep[termj]; repl++) {
+                        int p = repk + nrep_sums[termi];
+                        int q = repl + nrep_sums[termj];
+                        V(p,q) = bt(termi, termj);
                         if ((termi == termj) && (repk == repl)) {
                             V(p,q) += gamma;
                         }
@@ -67,7 +71,11 @@ public:
         fcount++;
         out << "###################### IN ComputeLogLik ########################" << endl;
         out << "n: " << n << endl;
-        out << "nrep: " << nrep << endl;
+        out << "nrep sums: " << endl;
+        for (std::vector<int>::const_iterator it=nrep_sums.begin(); it != nrep_sums.end(); it++) { 
+                out << " " << *it; 
+        } 
+        out << endl;
         out << "gamma: " << gamma << endl;
 #endif
 
