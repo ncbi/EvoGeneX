@@ -18,8 +18,7 @@ Brown = setRefClass("Brown",
     getCovar = function(nrep, gamma) {
       nterm = tree@nterm
       bt = tree@branch.times
-      sum_nrep = sum(nrep$n)
-      v = matrix(0, sum_nrep, sum_nrep)
+      v = matrix(0, sum(nrep$n), sum(nrep$n))
       for (i in 1:nterm) {
         for (k in 1:nrep[i,]$n) {
           for (j in 1:nterm) {
@@ -94,7 +93,7 @@ Brown = setRefClass("Brown",
                     ub=rep(ub, length(par)),
                     opts <- list(algorithm="NLOPT_LN_SBPLX",
                                  maxeval=10000,
-                                 ftol_rel=.1))
+                                 ftol_rel=.Machine$double.eps^0.5))
 
       status = opt$status
       message = opt$message
