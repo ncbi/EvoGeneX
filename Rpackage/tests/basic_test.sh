@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Runs the local and release versions of EvoGeneX, 
+# saving output to tests/results/ and printing any differences.
+# Assumes this is being run from the Rpackage/ directory.
+
 # Create results directory if it doesn't exists
 if [ ! -d "tests/results/" ]; then
     mkdir "tests/results/"

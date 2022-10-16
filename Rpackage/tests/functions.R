@@ -1,5 +1,6 @@
 # Functions to run Brown and EvoGeneX both with R code and C++ code
 
+# Loads the example drosophila data
 get_files <- function() {
   return(c(tree_file = "inst/extdata/drosophila9.newick",
            single_regime_file = "inst/extdata/regime_global.csv",
@@ -7,11 +8,13 @@ get_files <- function() {
            data_file = "inst/extdata/HD_M_FBgn0000008.csv"))
 }
 
+# Read the data and convert to tall
 get_data <- function(data_file) {
   data <- read.csv(data_file)
   data <- data %>% gather("replicate", "exprval", -species)
 }
 
+# Run brownian motion R code for a single gene
 run_brown_slow <- function(tree_file, data) {
   brown <- Brown()
   brown$setTree(tree_file)
@@ -19,6 +22,7 @@ run_brown_slow <- function(tree_file, data) {
   return(results)
 }
 
+# Run brownian motion C++ code for a single gene
 run_brown_fast <- function(tree_file, data) {
   brown <- Brown()
   brown$setTree(tree_file)
@@ -26,6 +30,7 @@ run_brown_fast <- function(tree_file, data) {
   return(results)
 }
 
+# Run EvoGeneX R code for a single gene
 run_evogenex_slow <- function(tree_file, regime_file, data) {
   evog <- EvoGeneX()
   evog$setTree(tree_file)
@@ -34,6 +39,7 @@ run_evogenex_slow <- function(tree_file, regime_file, data) {
   return(results)
 }
 
+# Run EvoGeneX C++ code for a single gene
 run_evogenex_fast <- function(tree_file, regime_file, data) {
   evog <- EvoGeneX()
   evog$setTree(tree_file)
@@ -42,6 +48,7 @@ run_evogenex_fast <- function(tree_file, regime_file, data) {
   return(results)
 }
 
+# Run all methods and write output to tests/results/
 run_all <- function(tree_file, single_regime_file, two_regime_file, data, version) {
   print("Run brown slow")
   new_brown_slow <- run_brown_slow(tree_file, data)

@@ -3,8 +3,11 @@ library(ape)
 library(ouch)
 library(reshape2)
 library(nloptr)
-
 source("tests/functions.R")
+
+# Installs the local version of EvoGeneX and runs all methods on
+# the example drosophila data, saving to tests/results/
+# Assumes this is being run from the Rpackage/ directory.
 
 # Test files
 file_paths <- get_files()
