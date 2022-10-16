@@ -124,7 +124,10 @@ public:
         fcount++;
         out << "###################### IN ComputeLogLik ########################" << endl;
         out << "n: " << n << endl;
-        // out << "nrep: " << nrep << endl;
+        out << "nrep: " << endl;
+        for (int i=0; i<nrep.length(); i++) { 
+                out << " " << nrep[i]; 
+        }         
         out << "alpha: " << alpha << endl;
         out << "gamma: " << gamma << endl;
 #endif

@@ -63,7 +63,7 @@ Brown = setRefClass("Brown",
     },
 
     fitSlow = function(data, gamma, 
-                       spe_col = 'species', rep_col = 'replicate', exp_col = 'exprval',
+                       spe_col = 'species', rep_col = 'replicate', exp_col = 'expval',
                        lb = 1e-10, ub = 1e+10,...) {
       data = data[complete.cases(data),]
       dat = data[c(spe_col, rep_col, exp_col)]

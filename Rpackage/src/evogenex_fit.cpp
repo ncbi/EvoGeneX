@@ -100,7 +100,10 @@ List evogenex_fit(int nterm,
 {
 #if KEEP_LOG
     printf("nterm=%d\n", nterm);
-    // printf("nrep=%d\n", nrep);
+    cout << "nrep: " << endl;
+    for (int i=0; i<nrep.length(); i++) { 
+            cout << " " << nrep[i]; 
+    }     
     printf("nreg=%d\n", nreg);
     cout << "nbranch: ";
     for (auto v:nbranch) { cout << " " << v; } cout << endl;
