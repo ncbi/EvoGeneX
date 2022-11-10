@@ -12,19 +12,19 @@ Brown = setRefClass("Brown",
     getWeights = function(nrep) {
       nt = tree@nterm
       epochs = tree@epochs
-      W = matrix(1, nt*nrep, 1)
+      W = matrix(1, sum(nrep$n), 1)
       return(W)
     },
     getCovar = function(nrep, gamma) {
       nterm = tree@nterm
       bt = tree@branch.times
-      v = matrix(0, nterm*nrep, nterm*nrep)
+      v = matrix(0, sum(nrep$n), sum(nrep$n))
       for (i in 1:nterm) {
-        for (k in 1:nrep) {
+        for (k in 1:nrep[i,]$n) {
           for (j in 1:nterm) {
-            for (l in 1:nrep) {
-              p = k + (i-1)*nrep
-              q = l + (j-1)*nrep
+            for (l in 1:nrep[j,]$n) {
+              p = k + sum(nrep[1:i-1,]$n)
+              q = l + sum(nrep[1:j-1,]$n)
               v[p,q] = bt[i,j]
               if ((i == j) && (k == l)) {
                 v[p,q] = v[p,q] + gamma
@@ -65,9 +65,11 @@ Brown = setRefClass("Brown",
     fitSlow = function(data, gamma, 
                        spe_col = 'species', rep_col = 'replicate', exp_col = 'expval',
                        lb = 1e-10, ub = 1e+10,...) {
+      data = data[complete.cases(data),]
       dat = data[c(spe_col, rep_col, exp_col)]
       names(dat) = c('species', 'replicate', 'expval')
       replicates = unique(dat$replicate)
+      nrep = dat %>% group_by(species) %>% tally()
       dat = dcast(dat, species~replicate, value.var='expval')
       otd = as(tree, 'data.frame')
       tmp <- merge(otd, data.frame(dat), by.x='labels', by.y='species', all=TRUE)
@@ -75,8 +77,7 @@ Brown = setRefClass("Brown",
       rownames(tmp) <- tmp$nodes
       tmp = tmp[as.character(tree@term), replicates, drop=FALSE]
       dat = gather(data.frame(t(tmp)))$value
-
-      nrep <- length(replicates)
+      dat = dat[!is.na(dat)]
       optim.diagn <- vector(mode='list',length=0)
       par = c(gamma)
       opt <- nloptr(par,
@@ -122,16 +123,18 @@ Brown = setRefClass("Brown",
                    lb = 1e-10,
                    ub = 1e+10,
                    ...) {
-      dat <- prepare_replicated_data(data,
+      dat_nrep <- prepare_replicated_data(data,
                                      format,
                                      species_col,
                                      replicate_col,
                                      exprval_col,
                                      tree)
+      dat <- dat_nrep$dat
+      nrep <- dat_nrep$nrep
 
       opt <- brown_fit(dat = dat,
                        nterm = tree@nterm,
-                       nrep = length(dat)/tree@nterm,
+                       nrep = nrep,
                        bt = tree@branch.times,
                        gamma = gamma)
 

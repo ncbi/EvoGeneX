@@ -32,8 +32,14 @@ prepare_replicated_data <- function(data,
     #%>% {print(.); .}
     %>% arrange(factor(nodes, levels = terms, ordered = TRUE), !!replicate_col)
   )
+  # print(otd)
+  dat <- pull(otd, !!exprval_col)
+  nrep = otd %>% group_by(labels) %>% tally() %>% arrange(factor(labels, level=unique(otd$labels)))
+  # print(nrep)
+
   #print(otd)
-  pull(otd, !!exprval_col)
+  
+  return(list("dat"=dat, "nrep"=nrep$n))
 }
 
 glssoln <- function (a, x, v, tol = sqrt(.Machine$double.eps)) {

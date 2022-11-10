@@ -44,7 +44,7 @@ EvoGeneX <- setRefClass("EvoGeneX",
       nt = tree@nterm
       epochs = tree@epochs
       nreg = ncol(beta[[1]][[1]])
-      W = matrix(0, nt*nrep, nreg)
+      W = matrix(0, sum(nrep$n), nreg)
       #print("In get weight, initially W:")
       #print(W)
       for (i in 1:nt) {
@@ -66,8 +66,8 @@ EvoGeneX <- setRefClass("EvoGeneX",
         #print(paste("BP for terminal", i))
         #print(bp)
         for (r in 1:nreg) {
-          for (k in 1:nrep) {
-            p = k + (i-1)*nrep
+          for (k in 1:nrep[i,]$n) {
+            p = k + sum(nrep[1:i-1,]$n)
             W[p,r] = sum(y*bp[,r])
           }
         }
@@ -79,13 +79,14 @@ EvoGeneX <- setRefClass("EvoGeneX",
     getCovar = function(nrep, alpha, gamma) {
       nterm = tree@nterm
       bt = tree@branch.times
-      v = matrix(0, nterm*nrep, nterm*nrep)
+      sum_nrep = sum(nrep$n)
+      v = matrix(0, sum_nrep, sum_nrep)
       for (i in 1:nterm) {
-        for (k in 1:nrep) {
+        for (k in 1:nrep[i,]$n) {
           for (j in 1:nterm) {
-            for (l in 1:nrep) {
-              p = k + (i-1)*nrep
-              q = l + (j-1)*nrep
+            for (l in 1:nrep[j,]$n) {
+              p = k + sum(nrep[1:i-1,]$n)
+              q = l + sum(nrep[1:j-1,]$n)
               part1 = exp(alpha*(-bt[i,i] - bt[j,j] + 2*bt[i,j]));
               part2 = (1-exp(-2*alpha*bt[i,j]));
               v[p,q] = part1*part2/(2*alpha);
@@ -200,9 +201,11 @@ EvoGeneX <- setRefClass("EvoGeneX",
     fitSlow = function(data, alpha, gamma,
                    species_col = 'species', replicate_col = 'replicate', exprval_col = 'exprval',
                    lb = 1e-10, ub = 1e+10,...) {
+      data = data[complete.cases(data),]
       dat = data[c(species_col, replicate_col, exprval_col)]
       names(dat) = c('species', 'replicate', 'exprval')
       replicates = unique(dat$replicate)
+      nrep=dat %>% group_by(species) %>% tally()
       dat = dcast(dat, species~replicate, value.var='exprval')
       otd = as(tree, 'data.frame')
       tmp <- merge(otd, data.frame(dat), by.x='labels', by.y='species', all=TRUE)
@@ -210,10 +213,10 @@ EvoGeneX <- setRefClass("EvoGeneX",
       rownames(tmp) <- tmp$nodes
       tmp = tmp[as.character(tree@term), replicates, drop=FALSE]
       dat = gather(data.frame(t(tmp)))$value
+      dat = dat[!is.na(dat)]
       beta <- getBeta(tree,regimes)
       optim.diagn <- vector(mode='list',length=0)
       par = c(alpha, gamma)
-      nrep=length(replicates)
       opt <- nloptr(par,
                     eval_f = function(par) {
                       computeLogLik(nrep=nrep, beta=beta, dat=dat, alpha=par[1], gamma=par[2])$dev
@@ -263,17 +266,20 @@ EvoGeneX <- setRefClass("EvoGeneX",
                    lb = 1e-10,
                    ub = 1e+10,
                    ...) {
-      dat <- prepare_replicated_data(data,
+      dat_nrep <- prepare_replicated_data(data,
                                      format,
                                      species_col,
                                      replicate_col,
                                      exprval_col,
                                      tree)
 
+      dat <- dat_nrep$dat
+      nrep <- dat_nrep$nrep
+
       opt <- evogenex_fit(dat = dat,
                           nterm = tree@nterm,
                           nreg = nlevels(regimes$regimes),
-                          nrep = length(dat)/tree@nterm,
+                          nrep = nrep,
                           nbranch = nbranch,
                           beta = packed_beta,
                           epochs = packed_epochs,
