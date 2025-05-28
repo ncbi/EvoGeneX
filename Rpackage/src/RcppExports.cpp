@@ -12,13 +12,13 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // brown_fit
-List brown_fit(int nterm, int nrep, const NumericVector& dat, const NumericMatrix& bt, double gamma);
+List brown_fit(int nterm, const IntegerVector nrep, const NumericVector& dat, const NumericMatrix& bt, double gamma);
 RcppExport SEXP _EvoGeneX_brown_fit(SEXP ntermSEXP, SEXP nrepSEXP, SEXP datSEXP, SEXP btSEXP, SEXP gammaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type nterm(ntermSEXP);
-    Rcpp::traits::input_parameter< int >::type nrep(nrepSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type nrep(nrepSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type dat(datSEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type bt(btSEXP);
     Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP);
@@ -27,13 +27,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // evogenex_fit
-List evogenex_fit(int nterm, int nrep, int nreg, const NumericVector& dat, const NumericVector& nbranch, const NumericVector& beta, const NumericVector& epochs, const NumericMatrix& bt, double alpha, double gamma);
+List evogenex_fit(int nterm, const IntegerVector nrep, int nreg, const NumericVector& dat, const NumericVector& nbranch, const NumericVector& beta, const NumericVector& epochs, const NumericMatrix& bt, double alpha, double gamma);
 RcppExport SEXP _EvoGeneX_evogenex_fit(SEXP ntermSEXP, SEXP nrepSEXP, SEXP nregSEXP, SEXP datSEXP, SEXP nbranchSEXP, SEXP betaSEXP, SEXP epochsSEXP, SEXP btSEXP, SEXP alphaSEXP, SEXP gammaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type nterm(ntermSEXP);
-    Rcpp::traits::input_parameter< int >::type nrep(nrepSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type nrep(nrepSEXP);
     Rcpp::traits::input_parameter< int >::type nreg(nregSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type dat(datSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type nbranch(nbranchSEXP);
