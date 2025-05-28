@@ -1,7 +1,7 @@
 Package: EvoGeneX
 Type: Package
 Title: Replicate-aware Ornstein-Uhlenbeck Models for Phylogenetic Comparative Analysis
-Version: 0.9.9.0
+Version: 0.9.9.1
 Date: 2022-05-10
 Author: Soumitra Pal <soumitra.pal@nih.gov> and Teresa M. Przytycka <przytyck@mail.ncbi.nih.gov>
 Maintainer: Soumitra Pal <soumitra.pal@nih.gov>
