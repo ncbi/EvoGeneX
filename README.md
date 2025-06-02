@@ -39,4 +39,4 @@ The following Microsoft Excel files provide the Drosophila gene expression data 
 
 #### Citation
 
-Soumitra Pal, Brian C. Oliver, and Teresa M. Przytycka. Modeling gene expression evolution with EvoGeneX uncovers differences in evolution of species, organs and sexes. Journal of Computational Biology 2022.
+Soumitra Pal, Brian C. Oliver, and Teresa M. Przytycka. Modeling gene expression evolution with EvoGeneX uncovers differences in evolution of species, organs and sexes. Journal of Computational Biology 2023.
