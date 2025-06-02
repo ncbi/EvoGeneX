@@ -1,21 +1,25 @@
 library(EvoGeneX)
 library(tidyverse)
 
-wide <- read.csv("../data/HD_M_FBgn0000008.csv", stringsAsFactors = FALSE)
+wide <- read.csv("../inst/extdata/HD_M_FBgn0000008.csv", stringsAsFactors = FALSE)
+cat("\nInput data (wide format):\n")
+cat("=========================\n")
 tall <- wide %>% gather("replicate", "exprval", -species)
 
 # pretend we have two different genes
 tall <- rbind(tall %>% mutate(symbol = "gene1"),
               tall %>% mutate(symbol = "gene2"))
 
+cat("\nInput data (tall format):\n")
+cat("=========================\n")
 print(tall)
 
 evog <- EvoGeneX()
-evog$setTree("../data/drosophila9.newick")
-evog$setRegimes("../data/regime_global.csv")
+evog$setTree("../inst/extdata/drosophila9.newick")
+evog$setRegimes("../inst/extdata/regime_global.csv")
 
 brown <- Brown()
-brown$setTree("../data/drosophila9.newick")
+brown$setTree("../inst/extdata/drosophila9.newick")
 
 # degrees of freedom under different models
 ou_dof <- (
@@ -47,10 +51,11 @@ process_single_gene <- function(data) {
 res <- (
   tall
   %>% group_by(symbol)
-  %>% summarize(pvalue = process_single_gene(cur_data()))
+  %>% summarize(pvalue = process_single_gene(pick(everything())))
   %>% ungroup()
   %>% mutate(qvalue = p.adjust(pvalue, method = "fdr"))
   %>% mutate( constrained_vs_neutral = ifelse(qvalue < fdr_cutoff,
                                               "constrained", "neutral"))
 )
+cat("\nResults:\n")
 print(res)

@@ -12,16 +12,17 @@ citEntry(
     person(c("Teresa", "M."), "Przytycka")
   ),
   journal  = "Journal of Computational Biology",
-  year     = "2022",
-  volume   = "xx",
-  number   = "yy",
-  pages    = "ppp",
-  doi      = "10.1101/2020.01.06.895615",
+  year     = "2023",
+  volume   = "30",
+  number   = "1",
+  pages    = "21-40",
+  doi      = {10.1089/cmb.2022.0121},
+  note     = {PMID: 36037023},
   textVersion = paste(
     "Soumitra Pal, Brian C. Oliver, and Teresa M. Przytycka.",
-    "Modeling gene expression evolution with EvoGeneX uncovers",
-    "differences in evolution of species, organs and sexes.",
-    "bioRxiv (2021): 2020-01.",
-    "<10.1101/2020.01.06.895615>."
+    "Stochastic modeling of gene expression evolution uncovers tissue and sex",
+    "specific properties of expression evolution in the Drosophila genus"
+    "Journal of Computational Biology (2023): 30(1)",
+    "<10.1089/cmb.2022.0121>."
   )
 )

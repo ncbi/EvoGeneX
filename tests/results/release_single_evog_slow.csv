@@ -1,0 +1,8 @@
+"x"
+"optim.diagn.convergence" "3"
+"optim.diagn.message" "NLOPT_FTOL_REACHED: Optimization stopped because ftol_rel or ftol_abs (above) was reached."
+"theta.global" "247.660394016136"
+"alpha" "13.7682978876409"
+"sigma.sq" "785235.962262125"
+"gamma" "0.00279950112942761"
+"loglik" "-206.863746812592"

@@ -1,3 +1,6 @@
+
+Input data:
+===========
   species       R1        R2        R3       R4
 1    dana 204.5885 148.66722 230.49887 199.3192
 2    dgri 318.4320 258.96714 240.11517 259.6903
@@ -8,6 +11,9 @@
 7    dvir 543.9844 696.80922 663.95690 785.1595
 8    dwil 155.7480 214.93546 282.80718 316.0916
 9    dyak 106.0654 117.31824 102.06957 108.0820
+
+Fit by constrained model:
+=========================
 $optim.diagn
 $optim.diagn$convergence
 [1] 1
@@ -21,17 +27,20 @@ $theta
 247.6608 
 
 $alpha
-[1] 13.76675
+[1] 13.76674
 
 $sigma.sq
-[1] 785188.3
+[1] 785188.1
 
 $gamma
-[1] 0.002799634
+[1] 0.002799635
 
 $loglik
 [1] -206.8637
 
+
+Fit by adaptive model:
+=========================
 $optim.diagn
 $optim.diagn$convergence
 [1] 1
@@ -41,21 +50,24 @@ NULL
 
 
 $theta
-  global 
-247.6608 
+drosophila sophophora 
+  345.4954   185.7422 
 
 $alpha
-[1] 13.76675
+[1] 22.31994
 
 $sigma.sq
-[1] 785188.3
+[1] 990735.5
 
 $gamma
-[1] 0.002799634
+[1] 0.002218474
 
 $loglik
-[1] -206.8637
+[1] -205.9526
 
+
+Fit by neutral model:
+=========================
 $optim.diagn
 $optim.diagn$convergence
 [1] 1
@@ -76,6 +88,12 @@ $gamma
 $loglik
 [1] -209.7939
 
-[1] 0.05338773
-[1] 1
+
+Q-value of loglikelihood ratio test - adaptive vs neutral:
+[1] 0.02146577
+
+Q-value of loglikelihood ratio test - adaptive vs constrained:
+[1] 0.1770466
+
+Considering all tests, whether adaptive or not adaptive:
 [1] "not-adaptive"
