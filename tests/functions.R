@@ -48,8 +48,42 @@ run_evogenex_fast <- function(tree_file, regime_file, data) {
   return(results)
 }
 
+# Check that setting the tree works for both passing a file containing a newick string as well as a newick string directly
+run_newick_test <- function(tree_file) {
+  evog1 <- EvoGeneX()
+  evog1$setTree(tree_file)
+  evog2 <- EvoGeneX()
+  newick <- readLines(tree_file)
+  evog2$setTree(newick)
+  t1 <- evog1$tree
+  t2 <- evog2$tree
+  # Check all fields are equal
+  same_tree = TRUE
+  if (!identical(t1@nodes, t2@nodes)) {same_tree = FALSE}
+  if (same_tree & !identical(t1@ancestors, t2@ancestors)) {same_tree = FALSE}
+  if (same_tree & !identical(t1@nodelabels, t2@nodelabels)) {same_tree = FALSE}
+  if (same_tree & !identical(t1@times, t2@times)) {same_tree = FALSE}
+  if (same_tree & (t1@root != t2@root)) {same_tree = FALSE}
+  if (same_tree & (t1@nterm != t2@nterm)) {same_tree = FALSE}
+  if (same_tree & !identical(t1@term, t2@term)) {same_tree = FALSE}
+  if (same_tree & !identical(t1@anc.numbers, t2@anc.numbers)) {same_tree = FALSE}
+  if (same_tree & !identical(t1@lineages, t2@lineages)) {same_tree = FALSE}
+  if (same_tree & !identical(t1@epochs, t2@epochs)) {same_tree = FALSE}
+  if (same_tree & !identical(t1@branch.times, t2@branch.times)) {same_tree = FALSE}
+  if (same_tree & (t1@depth != t2@depth)) {same_tree = FALSE}
+  return(same_tree)
+}
+
+
 # Run all methods and write output to tests/results/
 run_all <- function(tree_file, single_regime_file, two_regime_file, data, version) {
+
+  print("Running all tests and saving to tests/results/")
+  if (!dir.exists(file.path("tests/results/"))){
+    print("Directory tests/results/ does not exist. Creating it.")
+    dir.create(file.path("tests/results/"))
+  }
+
   print("Run brown slow")
   new_brown_slow <- run_brown_slow(tree_file, data)
   new_brown_slow <- unlist(new_brown_slow)
@@ -79,4 +113,8 @@ run_all <- function(tree_file, single_regime_file, two_regime_file, data, versio
   new_two_evog_fast <- run_evogenex_fast(tree_file, two_regime_file, data)
   new_two_evog_fast <- unlist(new_two_evog_fast)
   write.table(new_two_evog_fast, paste("tests/results/", version, "_two_evog_fast.csv", sep=""))
+
+  print("Run newick file vs string comparison")
+  newick_res <- run_newick_test(tree_file)
+  write.table(newick_res, paste("tests/results/", version, "_newick.csv", sep=""))
 }

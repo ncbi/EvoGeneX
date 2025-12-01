@@ -18,7 +18,12 @@ BaseModel <- setRefClass(
       plot(tree)
     }
     , setTree = function(newickfile) {
-      apetree <- read.tree(newickfile)
+      if (file.exists(newickfile)) {
+        apetree <- read.tree(file=newickfile)
+      }
+      else {
+         apetree <- read.tree(text=newickfile)
+      }
       ot <- ape2ouch(apetree, scale = F)
       otd <- as(ot, "data.frame")
       otd$labels <- as.character(otd$labels)
